@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fashion Store - AI-Powered Reviews</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-bg: #f5f5f5;
+            --white: #ffffff;
+            --text-dark: #333;
+            --text-light: #666;
+            --border-color: #e0e0e0;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-hover: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* Header Styles */
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 0;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo::before {
+            content: '👗';
+            font-size: 2rem;
+        }
+
+        /* Search Styles */
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 2rem;
+            position: relative;
+        }
+
+        .search-box {
+            display: flex;
+            background: var(--white);
+            border-radius: 25px;
+            overflow: hidden;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 2px var(--secondary-color) inset;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            border-radius: 8px;
+            margin-top: 5px;
+            box-shadow: var(--shadow-hover);
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            z-index: 100;
+        }
+
+        .search-results.active {
+            display: block;
+        }
+
+        .search-result-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+
+        .search-result-item:hover {
+            background: var(--light-bg);
+        }
+
+        .result-title {
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .result-category {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* Content Styles */
+        .content {
+            padding: 2rem 0;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .results-count {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Item Grid */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+
+        .item-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .item-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .item-header {
+            display: flex;
+            align-items: start;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .category-emoji {
+            font-size: 2rem;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--primary-color);
+        }
+
+        .item-category {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .item-description {
+            color: var(--text-dark);
+            margin: 15px 0;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .rating {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stars {
+            color: var(--warning-color);
+        }
+
+        /* Button Styles */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: var(--secondary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #229954;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--white);
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close:hover {
+            color: var(--text-dark);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Review Sections */
+        .review-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--light-bg);
+            border-radius: 8px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .review-section {
+            margin-top: 30px;
+        }
+
+        .review-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-light);
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .toggle-btn.active {
+            color: var(--secondary-color);
+        }
+
+        .toggle-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--secondary-color);
+        }
+
+        .reviews-container {
+            display: none;
+        }
+
+        .reviews-container.active {
+            display: block;
+        }
+
+        .review-item {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: var(--light-bg);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .review-title {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .review-rating {
+            color: var(--warning-color);
+        }
+
+        .review-text {
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* AI Prediction Box */
+        .prediction-box {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            border: 2px solid;
+            font-size: 16px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .prediction-box.recommended {
+            background: #d1f2eb;
+            border-color: var(--success-color);
+            color: #0f5132;
+        }
+
+        .prediction-box.not-recommended {
+            background: #f8d7da;
+            border-color: var(--danger-color);
+            color: #842029;
+        }
+
+        .prediction-box strong {
+            font-size: 1.2rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* Utility Classes */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .emoji-indicator {
+            font-size: 1.5rem;
+            margin-right: 5px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .search-container {
+                width: 100%;
+                margin: 0;
+            }
+
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1 class="logo">Fashion Store</h1>
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" class="search-input" id="searchInput"
+                               placeholder="Search by category (e.g., dresses, pants, blouses)..."
+                               oninput="handleSearch()">
+                    </div>
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="content">
+        <div class="container">
+            <div class="results-header">
+                <div class="results-count" id="resultsCount">
+                    Loading items...
+                </div>
+                <button class="btn btn-success" onclick="showAddReviewModal()">
+                    ➕ Add New Review
+                </button>
+            </div>
+            <div class="items-grid" id="itemsGrid">
+                <div class="loading">🔄 Loading clothing items...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Item Details Modal -->
+    <div id="itemModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('itemModal')">&times;</span>
+            <div id="itemDetails"></div>
+        </div>
+    </div>
+
+    <!-- Add Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('reviewModal')">&times;</span>
+            <h2 class="modal-title">✍️ Add New Review</h2>
+            <form id="reviewForm" onsubmit="submitReview(event)">
+                <div class="form-group">
+                    <label class="form-label">Select Item *</label>
+                    <select class="form-select" id="itemSelect" required onchange="updateSelectedItem()">
+                        <option value="">Choose an item...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Review Title</label>
+                    <input type="text" class="form-input" id="reviewTitle"
+                           placeholder="Brief summary of your review"
+                           oninput="updatePrediction()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Review Description *</label>
+                    <textarea class="form-textarea" id="reviewText" required
+                              placeholder="Write your detailed review here..."
+                              oninput="updatePrediction()"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Rating *</label>
+                    <select class="form-select" id="rating" required>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - Good</option>
+                        <option value="3">⭐⭐⭐ 3 - Average</option>
+                        <option value="2">⭐⭐ 2 - Poor</option>
+                        <option value="1">⭐ 1 - Terrible</option>
+                    </select>
+                </div>
+
+                <!-- AI Prediction Box -->
+                <div id="predictionBox" style="display: none;"></div>
+
+                <div class="form-group">
+                    <label class="form-label">Recommendation</label>
+                    <select class="form-select" id="recommendation" required disabled>
+                        <option value="">🤖 Waiting for AI recommendation...</option>
+                        <option value="1">✅ Recommended</option>
+                        <option value="0">❌ Not Recommended</option>
+                    </select>
+                    <small style="color: var(--text-light); display: block; margin-top: 5px;">
+                        AI will analyze your review text to suggest a recommendation
+                    </small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('reviewModal')">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Submit Review
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allItems = [];
+        let currentItemId = null;
+        let predictionTimeout;
+        let searchTimeout;
+
+        // Initialize application
+        window.onload = function() {
+            loadItems();
+        };
+
+        function handleSearch() {
+            clearTimeout(searchTimeout);
+            const query = document.getElementById('searchInput').value.trim();
+
+            if (query.length >= 2) {
+                searchTimeout = setTimeout(() => {
+                    showSearchResults(query);
+                }, 200);
+            } else {
+                document.getElementById('searchResults').classList.remove('active');
+            }
+
+            // Update main grid
+            searchTimeout = setTimeout(() => {
+                loadItems(query);
+            }, 500);
+        }
+
+        async function showSearchResults(query) {
+            try {
+                const response = await fetch(`/api/items?search=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                const resultsDiv = document.getElementById('searchResults');
+
+                if (data.items.length > 0) {
+                    const resultsHtml = data.items.slice(0, 8).map(item => `
+                        <div class="search-result-item" onclick="viewItemDetails(${item.id})">
+                            <div class="result-title">${item.category_emoji} ${item.title}</div>
+                            <div class="result-category">${item.category}</div>
+                        </div>
+                    `).join('');
+
+                    resultsDiv.innerHTML = resultsHtml;
+                    resultsDiv.classList.add('active');
+                } else {
+                    resultsDiv.innerHTML = '<div class="search-result-item">No items found</div>';
+                    resultsDiv.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading search results:', error);
+            }
+        }
+
+        async function loadItems(searchQuery = '') {
+            try {
+                const url = searchQuery
+                    ? `/api/items?search=${encodeURIComponent(searchQuery)}`
+                    : '/api/items';
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                allItems = data.items;
+                displayItems(data.items);
+                updateItemSelect(data.items);
+
+                // Update results count with category information
+                if (searchQuery) {
+                    let message = `Found <strong>${data.count}</strong> items`;
+
+                    if (data.matched_categories && data.matched_categories.length > 0) {
+                        message += ` in categories: <strong>${data.matched_categories.join(', ')}</strong>`;
+                    }
+
+                    message += ` for "<strong>${searchQuery}</strong>"`;
+
+                    document.getElementById('resultsCount').innerHTML = message;
+                } else {
+                    document.getElementById('resultsCount').innerHTML =
+                        `Showing <strong>${data.count}</strong> items`;
+                }
+
+                // Hide search dropdown
+                document.getElementById('searchResults').classList.remove('active');
+            } catch (error) {
+                console.error('Error loading items:', error);
+                document.getElementById('itemsGrid').innerHTML =
+                    '<div class="error">❌ Error loading items. Please try again.</div>';
+            }
+        }
+
+        function displayItems(items) {
+            const grid = document.getElementById('itemsGrid');
+
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="no-results">🔍 No items found. Try different keywords.</div>';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <div class="item-card" onclick="viewItemDetails(${item.id})">
+                    <div class="item-header">
+                        <div class="category-emoji">${item.category_emoji}</div>
+                        <div class="item-info">
+                            <h3 class="item-title">${item.title}</h3>
+                            <p class="item-category">${item.category}</p>
+                        </div>
+                    </div>
+                    <p class="item-description">${item.description}</p>
+                    <div class="item-meta">
+                        <div class="rating">
+                            <span class="stars">${'★'.repeat(Math.round(item.rating))}${'☆'.repeat(5-Math.round(item.rating))}</span>
+                            <span>(${item.rating}/5)</span>
+                        </div>
+                        <div style="color: var(--text-light); font-size: 0.9rem;">
+                            ${item.review_count} ${item.review_count === 1 ? 'review' : 'reviews'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function viewItemDetails(itemId) {
+            try {
+                currentItemId = itemId;
+                const response = await fetch(`/api/item/${itemId}`);
+                const item = await response.json();
+
+                const detailsHtml = `
+                    <div class="modal-header">
+                        <h2 class="modal-title">
+                            <span>${item.category_emoji}</span>
+                            ${item.title}
+                        </h2>
+                        <button class="btn btn-success" onclick="showAddReviewForItem(${itemId}, '${item.title}')">
+                            ➕ Add Review
+                        </button>
+                    </div>
+                    <p class="item-category">${item.category}</p>
+                    <p class="item-description" style="margin: 20px 0;">${item.description}</p>
+
+                    <div class="review-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">${item.rating}/5</div>
+                            <div class="stat-label">Average Rating</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${item.total_reviews}</div>
+                            <div class="stat-label">Total Reviews</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${item.recommended_count}</div>
+                            <div class="stat-label">Recommended</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${item.not_recommended_count}</div>
+                            <div class="stat-label">Not Recommended</div>
+                        </div>
+                    </div>
+
+                    <div class="review-section">
+                        <h3>Customer Reviews</h3>
+                        <div class="review-toggle">
+                            <button class="toggle-btn active" onclick="toggleReviews('recommended', this)">
+                                ✅ Recommended (${item.recommended_count})
+                            </button>
+                            <button class="toggle-btn" onclick="toggleReviews('not-recommended', this)">
+                                ❌ Not Recommended (${item.not_recommended_count})
+                            </button>
+                        </div>
+
+                        <div id="recommended-reviews" class="reviews-container active">
+                            ${item.recommended_reviews.length > 0
+                                ? item.recommended_reviews.map(review => `
+                                    <div class="review-item">
+                                        <div class="review-header">
+                                            <div class="review-title">${review.title || 'No title'}</div>
+                                            <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
+                                        </div>
+                                        <p class="review-text">${review.text}</p>
+                                    </div>
+                                `).join('')
+                                : '<p style="padding: 20px; text-align: center; color: var(--text-light);">No recommended reviews yet.</p>'
+                            }
+                            ${item.has_more_recommended ?
+                                '<p style="text-align: center; color: var(--text-light); margin-top: 10px; font-style: italic;">Showing latest 5 reviews of ' + item.recommended_count + ' total</p>'
+                                : ''
+                            }
+                        </div>
+
+                        <div id="not-recommended-reviews" class="reviews-container">
+                            ${item.not_recommended_reviews.length > 0
+                                ? item.not_recommended_reviews.map(review => `
+                                    <div class="review-item">
+                                        <div class="review-header">
+                                            <div class="review-title">${review.title || 'No title'}</div>
+                                            <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
+                                        </div>
+                                        <p class="review-text">${review.text}</p>
+                                    </div>
+                                `).join('')
+                                : '<p style="padding: 20px; text-align: center; color: var(--text-light);">No not-recommended reviews yet.</p>'
+                            }
+                            ${item.has_more_not_recommended ?
+                                '<p style="text-align: center; color: var(--text-light); margin-top: 10px; font-style: italic;">Showing latest 5 reviews of ' + item.not_recommended_count + ' total</p>'
+                                : ''
+                            }
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('itemDetails').innerHTML = detailsHtml;
+                document.getElementById('itemModal').style.display = 'block';
+                document.getElementById('searchResults').classList.remove('active');
+            } catch (error) {
+                console.error('Error loading item details:', error);
+                alert('❌ Error loading item details. Please try again.');
+            }
+        }
+
+        function toggleReviews(type, button) {
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            button.classList.add('active');
+
+            document.querySelectorAll('.reviews-container').forEach(container => {
+                container.classList.remove('active');
+            });
+
+            if (type === 'recommended') {
+                document.getElementById('recommended-reviews').classList.add('active');
+            } else {
+                document.getElementById('not-recommended-reviews').classList.add('active');
+            }
+        }
+
+        function showAddReviewModal() {
+            document.getElementById('reviewModal').style.display = 'block';
+            document.getElementById('reviewForm').reset();
+            document.getElementById('predictionBox').style.display = 'none';
+            document.getElementById('recommendation').disabled = true;
+        }
+
+        function showAddReviewForItem(itemId, itemTitle) {
+            closeModal('itemModal');
+            showAddReviewModal();
+            document.getElementById('itemSelect').value = itemId.toString();
+            updateSelectedItem();
+        }
+
+        function updateItemSelect(items) {
+            const select = document.getElementById('itemSelect');
+            select.innerHTML = '<option value="">Choose an item...</option>' +
+                items.map(item => `
+                    <option value="${item.id}">
+                        ${item.category_emoji} ${item.title} - ${item.category}
+                    </option>
+                `).join('');
+        }
+
+        function updateSelectedItem() {
+            const select = document.getElementById('itemSelect');
+            if (select.value) {
+                document.getElementById('reviewTitle').value = '';
+                document.getElementById('reviewText').value = '';
+                document.getElementById('predictionBox').style.display = 'none';
+                document.getElementById('recommendation').disabled = true;
+                document.getElementById('recommendation').value = '';
+            }
+        }
+
+        async function updatePrediction() {
+            clearTimeout(predictionTimeout);
+
+            const reviewTitle = document.getElementById('reviewTitle').value.trim();
+            const reviewText = document.getElementById('reviewText').value.trim();
+
+            // Only predict if we have review text
+            if (reviewText.length < 5) {
+                document.getElementById('predictionBox').style.display = 'none';
+                document.getElementById('recommendation').disabled = true;
+                document.getElementById('recommendation').value = '';
+                return;
+            }
+
+            const predictionBox = document.getElementById('predictionBox');
+            predictionBox.className = 'prediction-box';
+            predictionBox.innerHTML = '<strong>🤖 AI is analyzing your review...</strong>';
+            predictionBox.style.display = 'block';
+
+            predictionTimeout = setTimeout(async () => {
+                try {
+                    console.log('Sending for prediction:', { title: reviewTitle, text: reviewText });
+
+                    const response = await fetch('/api/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            review_title: reviewTitle,
+                            review_text: reviewText
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Prediction failed');
+                    }
+
+                    const result = await response.json();
+                    console.log('Prediction result:', result);
+
+                    predictionBox.className = `prediction-box ${result.recommendation ? 'recommended' : 'not-recommended'}`;
+                    predictionBox.innerHTML = `
+                        <strong>🤖 AI Recommendation: ${result.recommended_text}</strong>
+                        <div style="font-size: 1.1rem; margin: 10px 0;">
+                            ${result.recommendation ? '✅' : '❌'} ${result.recommended_text}
+                        </div>
+                        <small>Confidence: ${result.confidence}</small>
+                        <small style="margin-top: 5px; display: block;">
+                            You can accept or override this recommendation below
+                        </small>
+                    `;
+
+                    const recommendationSelect = document.getElementById('recommendation');
+                    recommendationSelect.disabled = false;
+                    recommendationSelect.value = result.recommendation.toString();
+                } catch (error) {
+                    console.error('Error getting prediction:', error);
+                    predictionBox.innerHTML = '<strong>❌ Error analyzing review</strong>';
+                    predictionBox.className = 'prediction-box';
+                }
+            }, 300);
+        }
+
+        async function submitReview(event) {
+            event.preventDefault();
+
+            const itemId = document.getElementById('itemSelect').value;
+            if (!itemId) {
+                alert('Please select an item');
+                return;
+            }
+
+            const reviewTitle = document.getElementById('reviewTitle').value.trim();
+            const reviewText = document.getElementById('reviewText').value.trim();
+            const rating = parseInt(document.getElementById('rating').value);
+            const recommendation = document.getElementById('recommendation').value;
+
+            if (!recommendation) {
+                alert('Please wait for AI recommendation or select one manually');
+                return;
+            }
+
+            const reviewData = {
+                item_id: parseInt(itemId),
+                title: reviewTitle,
+                description: reviewText,
+                rating: rating,
+                recommendation: parseInt(recommendation)
+            };
+
+            console.log('Submitting review:', reviewData);
+
+            try {
+                const response = await fetch('/api/reviews', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reviewData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ Review submitted successfully!\n\nYou can view it at: ${result.review_url}`);
+                    closeModal('reviewModal');
+
+                    // Always refresh the current item view to show the new review
+                    if (currentItemId == itemId) {
+                        // Small delay to ensure the review is saved
+                        setTimeout(() => {
+                            viewItemDetails(currentItemId);
+                        }, 100);
+                    } else {
+                        // If we're adding a review for a different item, show that item
+                        setTimeout(() => {
+                            viewItemDetails(parseInt(itemId));
+                        }, 100);
+                    }
+
+                    // Also refresh the main list
+                    const currentSearch = document.getElementById('searchInput').value;
+                    loadItems(currentSearch);
+                } else {
+                    alert('❌ Error: ' + (result.error || 'Failed to submit review'));
+                }
+            } catch (error) {
+                console.error('Error submitting review:', error);
+                alert('❌ Error submitting review. Please try again.');
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+
+            if (!event.target.closest('.search-container')) {
+                document.getElementById('searchResults').classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
