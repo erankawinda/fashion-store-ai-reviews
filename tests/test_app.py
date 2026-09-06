@@ -1,3 +1,4 @@
+import json
 import unittest
 
 import app as fashion_app
@@ -55,6 +56,35 @@ class FashionStoreSmokeTests(unittest.TestCase):
             self.client.post('/api/predict', json={'review_text': ['not', 'text']}).status_code,
             400,
         )
+
+    def test_json_endpoints_reject_non_object_bodies(self):
+        for endpoint in ('/api/predict', '/api/reviews'):
+            for body in ([], ['review'], '', 'review', 1, True, None):
+                with self.subTest(endpoint=endpoint, body=body):
+                    response = self.client.post(
+                        endpoint,
+                        data=json.dumps(body),
+                        content_type='application/json',
+                    )
+                    self.assertEqual(response.status_code, 400)
+                    self.assertEqual(
+                        response.get_json(),
+                        {'error': 'Request body must be a valid JSON object'},
+                    )
+
+    def test_json_endpoints_reject_malformed_bodies(self):
+        for endpoint in ('/api/predict', '/api/reviews'):
+            with self.subTest(endpoint=endpoint):
+                response = self.client.post(
+                    endpoint,
+                    data='{"review_text":',
+                    content_type='application/json',
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(
+                    response.get_json(),
+                    {'error': 'Request body must be a valid JSON object'},
+                )
 
     def test_review_round_trip_and_validation(self):
         response = self.client.post(
