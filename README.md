@@ -43,7 +43,12 @@ in-memory review round trip. GitHub Actions runs the same suite on Python 3.12.
 
 ## Data and model artefacts
 
-- `assignment3_II.csv` is the coursework dataset used by the application.
+- `assignment3_II.csv` is the retained coursework dataset used by the
+  application. Its first ten fields and all 19,662 review rows are an exact
+  row-level subset of version 1 of Kaggle's
+  [Women's E-Commerce Clothing Reviews](https://www.kaggle.com/datasets/nicapotato/womens-ecommerce-clothing-reviews)
+  dataset (23,486 rows). Kaggle's official metadata identifies that upstream
+  dataset as `CC0: Public Domain`.
 - `model.pkl` is a stored scikit-learn logistic-regression classifier with
   classes `[0, 1]`.
 - `vectorizer.pkl` is a stored scikit-learn `CountVectorizer`.
@@ -56,13 +61,19 @@ in-memory review round trip. GitHub Actions runs the same suite on Python 3.12.
 
   On Linux, use `sha256sum --check ARTIFACTS.sha256`.
 
-The original download source, redistribution licence, training split, and
-evaluation results were not retained. That historical gap fixes the scope of
-this repository: it demonstrates the preserved local application and inference
-path, but it is not evidence for model quality and is not a basis for further
-redistribution of the dataset or model. No open-source licence is asserted for
-those artefacts. Python pickle files can execute code when loaded; use these
-files only from a source you trust.
+The comparison was repeated on 6 September 2026 against the upstream file
+`Womens Clothing E-Commerce Reviews.csv` (SHA-256
+`bd93cc515747ad1f87b8bc863c9e40da758509e6db6506a96d06976e61e36ee0`).
+The coursework file also contains `Clothes Title` and `Clothes Description`
+display fields that do not occur in the upstream dataset; their original
+construction was not recorded. The model-training notebook, split, and
+evaluation results were also not retained.
+
+The CC0 statement therefore applies only to the matched upstream review fields.
+No separate licence is asserted for the two added display fields or the stored
+model artefacts. This repository demonstrates the preserved local application
+and inference path; it is not evidence for model quality. Python pickle files
+can execute code when loaded, so use them only from a source you trust.
 
 ## Limitations
 
