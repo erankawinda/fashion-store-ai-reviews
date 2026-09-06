@@ -1,12 +1,14 @@
 import os
-
-from flask import Flask, render_template, request, jsonify
-import pandas as pd
 import pickle
-import re
-from difflib import SequenceMatcher
-from nltk.stem import PorterStemmer
+import time
 from collections import defaultdict
+from difflib import SequenceMatcher
+from pathlib import Path
+
+import pandas as pd
+from flask import Flask, jsonify, render_template, request
+
+BASE_DIR = Path(__file__).resolve().parent
 
 app = Flask(__name__)
 
@@ -14,7 +16,6 @@ app = Flask(__name__)
 model = None
 vectorizer = None
 items_df = None
-stemmer = PorterStemmer()
 
 # Category emoji mapping
 CATEGORY_EMOJIS = {
@@ -37,6 +38,22 @@ CATEGORY_EMOJIS = {
 }
 
 
+def normalize_category_token(token):
+    """Normalize common English category plurals without external corpora."""
+    token = token.lower().strip()
+    if token.endswith('ies') and len(token) > 3:
+        return f"{token[:-3]}y"
+    if token.endswith('sses'):
+        return token[:-2]
+    if token.endswith(('ches', 'shes', 'xes', 'zes')):
+        return token[:-2]
+    if token.endswith('oes'):
+        return token[:-1]
+    if token.endswith('s') and not token.endswith('ss'):
+        return token[:-1]
+    return token
+
+
 def get_category_emoji(category):
     """Get emoji for clothing category"""
     if not category:
@@ -54,12 +71,12 @@ def load_model_and_data():
     global model, vectorizer, items_df
     try:
         # Load pre-trained model
-        with open('model.pkl', 'rb') as f:
+        with (BASE_DIR / 'model.pkl').open('rb') as f:
             model = pickle.load(f)
             print("✓ Model loaded successfully")
 
         # Load vectorizer
-        with open('vectorizer.pkl', 'rb') as f:
+        with (BASE_DIR / 'vectorizer.pkl').open('rb') as f:
             vectorizer = pickle.load(f)
             print("✓ Vectorizer loaded successfully")
 
@@ -68,7 +85,7 @@ def load_model_and_data():
         raise
 
     # Load dataset
-    items_df = pd.read_csv('assignment3_II.csv')
+    items_df = pd.read_csv(BASE_DIR / 'assignment3_II.csv')
     items_df['Clothing ID'] = items_df['Clothing ID'].astype(int)
 
     # Create search index for better performance
@@ -94,7 +111,7 @@ def create_search_index():
         if pd.notna(row['Class Name']):
             category_words = row['Class Name'].lower().split()
             for word in category_words:
-                stem = stemmer.stem(word)
+                stem = normalize_category_token(word)
                 search_index[stem].add(row['Clothing ID'])
                 stem_mapping[stem] = word
 
@@ -112,7 +129,7 @@ def smart_search(query):
     query_words = query_lower.split()
 
     # Get stems for query words
-    query_stems = [stemmer.stem(word) for word in query_words]
+    query_stems = [normalize_category_token(word) for word in query_words]
 
     # Find matching items using inverted index
     matching_ids = set()
@@ -160,7 +177,7 @@ def calculate_category_relevance_score(row, query_stems):
 
     # Category match scoring
     if pd.notna(row['Class Name']):
-        category_stems = [stemmer.stem(word) for word in row['Class Name'].lower().split()]
+        category_stems = [normalize_category_token(word) for word in row['Class Name'].lower().split()]
 
         # Exact stem match
         for stem in query_stems:
@@ -302,9 +319,15 @@ def get_item(item_id):
 def predict():
     """Predict recommendation using both title and description"""
     try:
-        data = request.get_json() or {}
-        title = data.get('review_title', '').strip()
-        text = data.get('review_text', '').strip()
+        data = request.get_json(silent=True) or {}
+        title = data.get('review_title', '')
+        text = data.get('review_text', '')
+
+        if not isinstance(title, str) or not isinstance(text, str):
+            return jsonify({'error': 'Review title and text must be strings'}), 400
+
+        title = title.strip()
+        text = text.strip()
 
         if not text:
             return jsonify({'error': 'Review text is required'}), 400
@@ -335,7 +358,8 @@ def predict():
         probabilities = model.predict_proba(X)[0]
 
         # Get probability for positive class
-        prob_recommended = float(probabilities[1])
+        positive_class_index = list(model.classes_).index(1)
+        prob_recommended = float(probabilities[positive_class_index])
         model_score = prob_recommended if prediction == 1 else (1 - prob_recommended)
 
         return jsonify({
@@ -357,35 +381,53 @@ def add_review():
     """Add a new review to the dataset"""
     global items_df
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
 
     # Validate required fields
     item_id = data.get('item_id')
-    review_title = data.get('title', '').strip()
-    review_text = data.get('description', '').strip()
+    review_title = data.get('title', '')
+    review_text = data.get('description', '')
     rating = data.get('rating')
     recommendation = data.get('recommendation')
 
-    if not all([item_id, review_text, rating is not None, recommendation is not None]):
+    if not isinstance(review_title, str) or not isinstance(review_text, str):
+        return jsonify({'error': 'Review title and description must be strings'}), 400
+
+    review_title = review_title.strip()
+    review_text = review_text.strip()
+
+    if item_id is None or not review_text or rating is None or recommendation is None:
         return jsonify({'error': 'Missing required fields'}), 400
 
+    try:
+        item_id = int(item_id)
+        rating = int(rating)
+        recommendation = int(recommendation)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Item ID, rating, and recommendation must be integers'}), 400
+
+    if rating not in range(1, 6):
+        return jsonify({'error': 'Rating must be between 1 and 5'}), 400
+
+    if recommendation not in (0, 1):
+        return jsonify({'error': 'Recommendation must be 0 or 1'}), 400
+
     # Get item information
-    item_rows = items_df[items_df['Clothing ID'] == int(item_id)]
+    item_rows = items_df[items_df['Clothing ID'] == item_id]
     if item_rows.empty:
         return jsonify({'error': 'Item not found'}), 404
 
     item_info = item_rows.iloc[0]
 
     # Create new review with unique ID and timestamp for sorting
-    import time
     new_review_id = int(time.time() * 1000)  # Use timestamp as unique ID
     new_review = {
-        'Clothing ID': int(item_id),
+        'Clothing ID': item_id,
         'Class Name': item_info['Class Name'],
         'Title': review_title,
         'Review Text': review_text,
-        'Rating': int(rating),
-        'Recommended IND': int(recommendation),
+        'Rating': rating,
+        'Recommended IND': recommendation,
         'Clothes Title': item_info['Clothes Title'],
         'Clothes Description': item_info['Clothes Description'],
         'Review ID': new_review_id,
