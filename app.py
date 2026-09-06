@@ -1,17 +1,12 @@
+import os
+
 from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import pickle
 import re
 from difflib import SequenceMatcher
-import nltk
 from nltk.stem import PorterStemmer
 from collections import defaultdict
-
-# Download required NLTK data (only needs to run once)
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
 
 app = Flask(__name__)
 
@@ -314,13 +309,8 @@ def predict():
         if not text:
             return jsonify({'error': 'Review text is required'}), 400
 
-        # Combine title and text for better prediction
+        # Combine title and text in the same form expected by the stored vectorizer.
         combined_text = f"{title} {text}".strip()
-
-        print(f"\n=== AI PREDICTION ===")
-        print(f"Title: '{title}'")
-        print(f"Text: '{text}'")
-        print(f"Combined: '{combined_text}'")
 
         # Transform text based on vectorizer configuration
         if hasattr(vectorizer, 'token_pattern'):
@@ -332,7 +322,6 @@ def predict():
                 tokens = combined_text.lower().split()
                 tokens = [t for t in tokens if len(t) >= 2]
                 processed_text = ','.join(tokens)
-                print(f"Using comma-separated format: '{processed_text}'")
                 X = vectorizer.transform([processed_text])
             else:
                 # Use standard format
@@ -341,23 +330,19 @@ def predict():
             # Default to standard format
             X = vectorizer.transform([combined_text])
 
-        print(f"Feature vector: shape={X.shape}, non-zero features={X.nnz}")
-
         # Make prediction
         prediction = model.predict(X)[0]
         probabilities = model.predict_proba(X)[0]
 
         # Get probability for positive class
         prob_recommended = float(probabilities[1])
-        confidence = prob_recommended if prediction == 1 else (1 - prob_recommended)
-
-        print(f"Prediction: {prediction}, Confidence: {confidence:.2f}")
+        model_score = prob_recommended if prediction == 1 else (1 - prob_recommended)
 
         return jsonify({
             'recommendation': int(prediction),
             'probability': prob_recommended,
             'recommended_text': 'Recommended' if prediction == 1 else 'Not Recommended',
-            'confidence': f"{confidence * 100:.1f}%"
+            'model_score': f"{model_score * 100:.1f}%"
         })
 
     except Exception as e:
@@ -453,4 +438,7 @@ def get_review(review_id):
 if __name__ == '__main__':
     print("🚀 Starting Fashion Store Application...")
     load_model_and_data()
-    app.run(debug=True, port=5000)
+    app.run(
+        debug=os.getenv('FLASK_DEBUG') == '1',
+        port=int(os.getenv('PORT', '5000')),
+    )

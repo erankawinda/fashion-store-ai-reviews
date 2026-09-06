@@ -673,6 +673,15 @@
         let predictionTimeout;
         let searchTimeout;
 
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
         // Initialize application
         window.onload = function() {
             loadItems();
@@ -706,8 +715,8 @@
                 if (data.items.length > 0) {
                     const resultsHtml = data.items.slice(0, 8).map(item => `
                         <div class="search-result-item" onclick="viewItemDetails(${item.id})">
-                            <div class="result-title">${item.category_emoji} ${item.title}</div>
-                            <div class="result-category">${item.category}</div>
+                            <div class="result-title">${escapeHtml(item.category_emoji)} ${escapeHtml(item.title)}</div>
+                            <div class="result-category">${escapeHtml(item.category)}</div>
                         </div>
                     `).join('');
 
@@ -740,10 +749,10 @@
                     let message = `Found <strong>${data.count}</strong> items`;
 
                     if (data.matched_categories && data.matched_categories.length > 0) {
-                        message += ` in categories: <strong>${data.matched_categories.join(', ')}</strong>`;
+                        message += ` in categories: <strong>${data.matched_categories.map(escapeHtml).join(', ')}</strong>`;
                     }
 
-                    message += ` for "<strong>${searchQuery}</strong>"`;
+                    message += ` for "<strong>${escapeHtml(searchQuery)}</strong>"`;
 
                     document.getElementById('resultsCount').innerHTML = message;
                 } else {
@@ -771,13 +780,13 @@
             grid.innerHTML = items.map(item => `
                 <div class="item-card" onclick="viewItemDetails(${item.id})">
                     <div class="item-header">
-                        <div class="category-emoji">${item.category_emoji}</div>
+                        <div class="category-emoji">${escapeHtml(item.category_emoji)}</div>
                         <div class="item-info">
-                            <h3 class="item-title">${item.title}</h3>
-                            <p class="item-category">${item.category}</p>
+                            <h3 class="item-title">${escapeHtml(item.title)}</h3>
+                            <p class="item-category">${escapeHtml(item.category)}</p>
                         </div>
                     </div>
-                    <p class="item-description">${item.description}</p>
+                    <p class="item-description">${escapeHtml(item.description)}</p>
                     <div class="item-meta">
                         <div class="rating">
                             <span class="stars">${'★'.repeat(Math.round(item.rating))}${'☆'.repeat(5-Math.round(item.rating))}</span>
@@ -800,15 +809,15 @@
                 const detailsHtml = `
                     <div class="modal-header">
                         <h2 class="modal-title">
-                            <span>${item.category_emoji}</span>
-                            ${item.title}
+                            <span>${escapeHtml(item.category_emoji)}</span>
+                            ${escapeHtml(item.title)}
                         </h2>
-                        <button class="btn btn-success" onclick="showAddReviewForItem(${itemId}, '${item.title}')">
+                        <button class="btn btn-success" onclick="showAddReviewForItem(${itemId})">
                             ➕ Add Review
                         </button>
                     </div>
-                    <p class="item-category">${item.category}</p>
-                    <p class="item-description" style="margin: 20px 0;">${item.description}</p>
+                    <p class="item-category">${escapeHtml(item.category)}</p>
+                    <p class="item-description" style="margin: 20px 0;">${escapeHtml(item.description)}</p>
 
                     <div class="review-stats">
                         <div class="stat-item">
@@ -845,10 +854,10 @@
                                 ? item.recommended_reviews.map(review => `
                                     <div class="review-item">
                                         <div class="review-header">
-                                            <div class="review-title">${review.title || 'No title'}</div>
+                                            <div class="review-title">${escapeHtml(review.title || 'No title')}</div>
                                             <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
                                         </div>
-                                        <p class="review-text">${review.text}</p>
+                                        <p class="review-text">${escapeHtml(review.text)}</p>
                                     </div>
                                 `).join('')
                                 : '<p style="padding: 20px; text-align: center; color: var(--text-light);">No recommended reviews yet.</p>'
@@ -864,10 +873,10 @@
                                 ? item.not_recommended_reviews.map(review => `
                                     <div class="review-item">
                                         <div class="review-header">
-                                            <div class="review-title">${review.title || 'No title'}</div>
+                                            <div class="review-title">${escapeHtml(review.title || 'No title')}</div>
                                             <div class="review-rating">${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</div>
                                         </div>
-                                        <p class="review-text">${review.text}</p>
+                                        <p class="review-text">${escapeHtml(review.text)}</p>
                                     </div>
                                 `).join('')
                                 : '<p style="padding: 20px; text-align: center; color: var(--text-light);">No not-recommended reviews yet.</p>'
@@ -913,7 +922,7 @@
             document.getElementById('recommendation').disabled = true;
         }
 
-        function showAddReviewForItem(itemId, itemTitle) {
+        function showAddReviewForItem(itemId) {
             closeModal('itemModal');
             showAddReviewModal();
             document.getElementById('itemSelect').value = itemId.toString();
@@ -925,7 +934,7 @@
             select.innerHTML = '<option value="">Choose an item...</option>' +
                 items.map(item => `
                     <option value="${item.id}">
-                        ${item.category_emoji} ${item.title} - ${item.category}
+                        ${escapeHtml(item.category_emoji)} ${escapeHtml(item.title)} - ${escapeHtml(item.category)}
                     </option>
                 `).join('');
         }
@@ -962,8 +971,6 @@
 
             predictionTimeout = setTimeout(async () => {
                 try {
-                    console.log('Sending for prediction:', { title: reviewTitle, text: reviewText });
-
                     const response = await fetch('/api/predict', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -978,15 +985,13 @@
                     }
 
                     const result = await response.json();
-                    console.log('Prediction result:', result);
-
                     predictionBox.className = `prediction-box ${result.recommendation ? 'recommended' : 'not-recommended'}`;
                     predictionBox.innerHTML = `
                         <strong>🤖 AI Recommendation: ${result.recommended_text}</strong>
                         <div style="font-size: 1.1rem; margin: 10px 0;">
                             ${result.recommendation ? '✅' : '❌'} ${result.recommended_text}
                         </div>
-                        <small>Confidence: ${result.confidence}</small>
+                        <small>Model score (not calibrated): ${escapeHtml(result.model_score)}</small>
                         <small style="margin-top: 5px; display: block;">
                             You can accept or override this recommendation below
                         </small>
@@ -1029,8 +1034,6 @@
                 rating: rating,
                 recommendation: parseInt(recommendation)
             };
-
-            console.log('Submitting review:', reviewData);
 
             try {
                 const response = await fetch('/api/reviews', {
