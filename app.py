@@ -80,8 +80,8 @@ def load_model_and_data():
             vectorizer = pickle.load(f)
             print("✓ Vectorizer loaded successfully")
 
-    except Exception as e:
-        print(f"❌ ERROR loading model/vectorizer: {str(e)}")
+    except Exception:
+        app.logger.exception("Unable to load the stored model or vectorizer")
         raise
 
     # Load dataset
@@ -369,10 +369,8 @@ def predict():
             'model_score': f"{model_score * 100:.1f}%"
         })
 
-    except Exception as e:
-        print(f"ERROR in prediction: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        app.logger.exception("Prediction failed")
         return jsonify({'error': 'Prediction failed. Please check server logs.'}), 500
 
 

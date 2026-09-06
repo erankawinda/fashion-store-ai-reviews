@@ -48,11 +48,13 @@ in-memory review round trip. GitHub Actions runs the same suite on Python 3.12.
   classes `[0, 1]`.
 - `vectorizer.pkl` is a stored scikit-learn `CountVectorizer`.
 - `ARTIFACTS.sha256` records SHA-256 digests for the dataset, model, and
-  vectorizer. Check the tested snapshot with:
+  vectorizer. Check the tested snapshot on macOS with:
 
   ```bash
   shasum -a 256 -c ARTIFACTS.sha256
   ```
+
+  On Linux, use `sha256sum --check ARTIFACTS.sha256`.
 
 The original download source, redistribution licence, training split, and
 evaluation results were not retained. That historical gap fixes the scope of
