@@ -41,6 +41,53 @@ The tests load the retained artefacts and exercise the home page, item listing,
 category search, item details, classification, input validation, and the
 in-memory review round trip. GitHub Actions runs the same suite on Python 3.12.
 
+## Repository guide
+
+| File or folder | Purpose |
+|---|---|
+| `app.py` | Flask routes, category search, model inference, and in-memory reviews |
+| `templates/index.html` | Browser interface and API requests |
+| `tests/test_app.py` | Application and API smoke tests |
+| `assignment3_II.csv` | Clothing and review records displayed by the app |
+| `model.pkl` and `vectorizer.pkl` | Stored classifier and text transformation |
+| `requirements.lock` | Exact dependency versions for the retained environment |
+| `ARTIFACTS.sha256` | Checksums for the retained data and model files |
+
+## JSON API
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/items?search=dress` | Search clothing categories; return up to 50 items |
+| `GET /api/item/<item_id>` | Show an item and its review summary |
+| `POST /api/predict` | Predict a recommendation from review text |
+| `POST /api/reviews` | Add a review to the running application's memory |
+| `GET /api/review/<review_id>` | Retrieve an added review |
+
+With the app running, try category search and prediction:
+
+```bash
+curl 'http://127.0.0.1:5000/api/items?search=dress'
+
+curl -X POST http://127.0.0.1:5000/api/predict \
+  -H 'Content-Type: application/json' \
+  -d '{"review_title":"Comfortable","review_text":"A comfortable and useful item."}'
+```
+
+Prediction requires a nonempty `review_text` string. `review_title` is optional
+and must be a string. The response includes a binary `recommendation` and the
+model's probability for the recommended class; this score is not a verified
+measure of predictive accuracy.
+
+To add a review, send an object to `/api/reviews` containing an existing
+`item_id`, a nonempty `description`, a `rating` from 1 to 5, and a binary
+`recommendation` (0 or 1). An optional `title` must be a string. The response
+includes a `review_url` for retrieving the added review. Use an item ID returned
+by `/api/items`.
+
+Both POST endpoints expect a JSON object. Arrays, strings, scalar values,
+malformed JSON, and invalid fields return HTTP 400 with an `error` message.
+Unknown item or review IDs return HTTP 404.
+
 ## Data and model artefacts
 
 - `assignment3_II.csv` is the retained coursework dataset used by the

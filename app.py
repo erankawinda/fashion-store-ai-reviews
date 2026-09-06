@@ -319,7 +319,10 @@ def get_item(item_id):
 def predict():
     """Predict recommendation using both title and description"""
     try:
-        data = request.get_json(silent=True) or {}
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({'error': 'Request body must be a valid JSON object'}), 400
+
         title = data.get('review_title', '')
         text = data.get('review_text', '')
 
@@ -379,7 +382,9 @@ def add_review():
     """Add a new review to the dataset"""
     global items_df
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Request body must be a valid JSON object'}), 400
 
     # Validate required fields
     item_id = data.get('item_id')
